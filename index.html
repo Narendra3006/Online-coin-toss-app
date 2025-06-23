@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Coin Toss - Free Game by Narendra3006</title>
+  <meta name="description" content="Play the Tricky Coin Online Toss game! Flip a coin with a twist: click 'Flip' for Heads, the coin for Tails, or text for random. Free and fun by Narendra3006.">
+  <meta name="keywords" content="tricky coin online toss, coin toss game, online coin flip, free coin game, Narendra3006">
+  <meta name="robots" content="index, follow">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      position: relative;
+    }
+    #flipButton {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+      white-space: nowrap;
+    }
+    #flipButton:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    canvas {
+      border: 2px solid #333;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .word {
+      display: inline-block;
+      padding: 0 5px;
+      cursor: pointer;
+    }
+    .word:hover {
+      background-color: #45a049;
+    }
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      font-size: 12px;
+      color: #666;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .guide-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    .guide-button:hover {
+      background-color: #45a049;
+    }
+    #guideModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .guide-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+    }
+    .guide-content h1 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+    .guide-content p {
+      font-size: 16px;
+      color: #444;
+      line-height: 1.6;
+    }
+    .guide-content ul {
+      list-style-type: none;
+      padding: 0;
+      text-align: left;
+      margin: 20px 0;
+    }
+    .guide-content li {
+      font-size: 16px;
+      color: #444;
+      margin-bottom: 10px;
+    }
+    .guide-content li strong {
+      color: #4CAF50;
+    }
+    .close-button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <button class="guide-button">How to Play (Guide)</button>
+  <div id="sketch-holder"></div>
+  <button id="flipButton"><span class="word">Flip</span> <span class="word">the</span> <span class="word">Coin</span></button>
+  <div id="result"></div>
+  <div id="footer">snk</div>
+  <div id="guideModal">
+    <div class="guide-content">
+      <span class="close-button">×</span>
+      <h1> Online Coin Toss - Guide</h1>
+      <p>Welcome to the Tricky  Online Coin Toss game! This fun and interactive game lets you flip a virtual coin with a unique twist. Follow the instructions below to understand how to play.</p>
+      <ul>
+        <li><strong>Click the "Flip" word:</strong> Clicking on the word "Flip" in the button will always result in <strong>Heads</strong>.</li>
+        <li><strong>Click the Coin:</strong> Clicking directly on the coin graphic will always result in <strong>Tails</strong>.</li>
+        <li><strong>Click the word "the":</strong> Clicking on the word "the" in the button will give a <strong>random result</strong>, either Heads or Tails.</li>
+        <li><strong>Click the word "Coin":</strong> Clicking on the word "Coin" in the button will result in <strong>Tails</strong>, just like clicking the coin graphic.</li>
+      </ul>
+      <p>Enjoy the game and try out the different options to see the results! The coin will animate during the flip, and the result will be displayed below the coin.</p>
+    </div>
+  </div>
+  <script>
+    let coinState = null;
+    let isFlipping = false;
+    let angle = 0;
+    let flipDuration = 60;
+    let flipFrame = 0;
+    let coinRadius = 100;
+    let resultText;
+    let coinText = ['H', 'E', 'A', 'D', 'T', 'A', 'I', 'L', '!', '?', '*', '#'];
+
+    function setup() {
+      let canvas = createCanvas(coinRadius * 2, coinRadius * 2);
+      canvas.parent('sketch-holder');
+      textAlign(CENTER, CENTER);
+      textSize(28);
+      textFont('Arial Black');
+      resultText = select('#result');
+
+      // Add click listener to canvas for Tails
+      canvas.elt.addEventListener('click', () => {
+        if (!isFlipping) {
+          startFlip('TAILS');
+        }
+      });
+
+      // Add click listeners to each word
+      document.querySelectorAll('.word').forEach(word => {
+        word.addEventListener('click', (e) => {
+          if (!isFlipping) {
+            startFlip(word.textContent === 'Flip' ? 'HEADS' : word.textContent === 'Coin' ? 'TAILS' : word.textContent === 'the' ? (random() > 0.5 ? 'HEADS' : 'TAILS') : null);
+          }
+        });
+      });
+
+      // Guide modal functionality
+      const guideButton = document.querySelector('.guide-button');
+      const guideModal = document.querySelector('#guideModal');
+      const closeButton = document.querySelector('.close-button');
+
+      guideButton.addEventListener('click', () => {
+        guideModal.style.display = 'flex';
+      });
+
+      closeButton.addEventListener('click', () => {
+        guideModal.style.display = 'none';
+      });
+
+      // Close modal when clicking outside the guide content
+      guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) {
+          guideModal.style.display = 'none';
+        }
+      });
+    }
+
+    function startFlip(outcome) {
+      isFlipping = true;
+      flipFrame = 0;
+      resultText.html('Flipping...');
+      coinState = outcome; // Set outcome based on click location
+
+      setTimeout(() => {
+        isFlipping = false;
+        resultText.html(`Result: ${coinState || (random() > 0.5 ? 'HEADS' : 'TAILS')}`);
+      }, flipDuration * 1000 / 60);
+    }
+
+    function draw() {
+      background(220);
+      translate(coinRadius, coinRadius);
+
+      // Coin graphics with gradient
+      let gradient = drawingContext.createRadialGradient(0, 0, coinRadius * 0.3, 0, 0, coinRadius);
+      gradient.addColorStop(0, '#FFD700');
+      gradient.addColorStop(1, '#DAA520');
+      drawingContext.fillStyle = gradient;
+      ellipse(0, 0, coinRadius * 2, coinRadius * 2);
+
+      // Coin edge
+      strokeWeight(4);
+      stroke(100);
+      noFill();
+      ellipse(0, 0, coinRadius * 2, coinRadius * 2);
+      noStroke();
+
+      // Draw text
+      fill(0);
+      if (!isFlipping && coinState) {
+        push();
+        scale(1, 0.8);
+        text(coinState, 0, 0);
+        pop();
+      } else if (isFlipping) {
+        push();
+        let t = flipFrame / flipDuration;
+        let scaleFactor = 1 + 0.2 * sin(t * TWO_PI);
+        scale(scaleFactor, 0.8);
+        text(random(coinText), 0, 0);
+        pop();
+      } else {
+        push();
+        scale(1, 0.8);
+        text('COIN', 0, 0);
+        pop();
+      }
+
+      // Animation
+      if (isFlipping) {
+        let t = flipFrame / flipDuration;
+        angle = lerp(0, TWO_PI, t);
+        flipFrame++;
+        if (flipFrame >= flipDuration) {
+          flipFrame = 0;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
