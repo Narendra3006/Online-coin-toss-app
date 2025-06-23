@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coin Toss Game</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      position: relative;
+    }
+    #flipButton {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+      white-space: nowrap;
+    }
+    #flipButton:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    canvas {
+      border: 2px solid #333;
+      border-radius: 50%;
+    }
+    .word {
+      display: inline-block;
+      padding: 0 5px;
+      cursor: pointer;
+    }
+    .word:hover {
+      background-color: #45a049;
+    }
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      font-size: 12px;
+      color: #666;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div id="sketch-holder"></div>
+  <button id="flipButton"><span class="word">Flip</span> <span class="word">the</span> <span class="word">Coin</span></button>
+  <div id="result"></div>
+  <div id="footer">snk</div>
+  <script>
+    let coinState = null;
+    let isFlipping = false;
+    let angle = 0;
+    let flipDuration = 60;
+    let flipFrame = 0;
+    let coinRadius = 100;
+    let resultText;
+    let coinText = ['H', 'E', 'A', 'D', 'T', 'A', 'I', 'L', '!', '?', '*', '#'];
+    let sound;
+
+    function setup() {
+      let canvas = createCanvas(coinRadius * 2, coinRadius * 2);
+      canvas.parent('sketch-holder');
+      textAlign(CENTER, CENTER);
+      textSize(28);
+      textFont('Arial Black');
+      resultText = select('#result');
+
+      // Initialize sound
+      sound = document.createElement('audio');
+      sound.src = 'coin-spin.mp3'; // Local sound file
+      sound.preload = 'auto';
+      sound.loop = true; // Loop sound during flip
+      sound.onerror = () => console.error('Error loading audio file: coin-spin.mp3');
+
+      // Add click listeners to each word
+      document.querySelectorAll('.word').forEach(word => {
+        word.addEventListener('click', (e) => {
+          if (!isFlipping) {
+            isFlipping = true;
+            flipFrame = 0;
+            resultText.html('Flipping...');
+
+            // Play sound when flip starts
+            sound.currentTime = 0; // Reset sound to start
+            sound.play().catch(error => {
+              console.error('Audio play failed:', error);
+              // Continue without sound if playback fails
+            });
+
+            setTimeout(() => {
+              isFlipping = false;
+              if (word.textContent === 'Flip') {
+                coinState = 'HEADS';
+              } else if (word.textContent === 'Coin') {
+                coinState = 'TAILS';
+              } else if (word.textContent === 'the') {
+                coinState = random() > 0.5 ? 'HEADS' : 'TAILS';
+              }
+              resultText.html(`Result: ${coinState}`);
+              sound.pause(); // Stop sound when flip ends
+              sound.currentTime = 0; // Reset for next flip
+            }, flipDuration * 1000 / 60);
+          }
+        });
+      });
+
+      // Handle user interaction to unlock audio context (browser restriction)
+      document.addEventListener('click', () => {
+        if (sound.paused) {
+          sound.play().catch(() => {}); // Silent attempt to unlock
+        }
+      }, { once: true });
+    }
+
+    function draw() {
+      background(220);
+      translate(coinRadius, coinRadius);
+
+      // Coin graphics with gradient
+      let gradient = drawingContext.createRadialGradient(0, 0, coinRadius * 0.3, 0, 0, coinRadius);
+      gradient.addColorStop(0, '#FFD700');
+      gradient.addColorStop(1, '#DAA520');
+      drawingContext.fillStyle = gradient;
+      ellipse(0, 0, coinRadius * 2, coinRadius * 2);
+
+      // Coin edge
+      strokeWeight(4);
+      stroke(100);
+      noFill();
+      ellipse(0, 0, coinRadius * 2, coinRadius * 2);
+      noStroke();
+
+      // Draw text
+      fill(0);
+      if (!isFlipping && coinState) {
+        push();
+        scale(1, 0.8);
+        text(coinState, 0, 0);
+        pop();
+      } else if (isFlipping) {
+        push();
+        let t = flipFrame / flipDuration;
+        let scaleFactor = 1 + 0.2 * sin(t * TWO_PI);
+        scale(scaleFactor, 0.8);
+        text(random(coinText), 0, 0);
+        pop();
+      } else {
+        push();
+        scale(1, 0.8);
+        text('COIN', 0, 0);
+        pop();
+      }
+
+      // Animation
+      if (isFlipping) {
+        let t = flipFrame / flipDuration;
+        angle = lerp(0, TWO_PI, t);
+        flipFrame++;
+        if (flipFrame >= flipDuration) {
+          flipFrame = 0;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
