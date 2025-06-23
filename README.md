@@ -1,4 +1,4 @@
-# Coin Toss App
+# Online Toss App
 
 Welcome to the **Coin Toss App**, a fun and interactive online game created by Narendra3006! This project features a unique twist on the classic coin toss, allowing users to control the outcome with different click actions.
 
